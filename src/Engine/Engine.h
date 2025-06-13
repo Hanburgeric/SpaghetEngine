@@ -6,8 +6,9 @@ namespace engine {
 
 class Engine {
 public:
-  bool Initialize();
-  void Shutdown();
+
+private:
+
 };
 
 } // namespace engine
