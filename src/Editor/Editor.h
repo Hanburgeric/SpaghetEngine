@@ -23,7 +23,15 @@ public:
 
 private:
   void OnQuit();
-  void OnWindowResized();
+  void OnWindowResized() const;
+
+  void CreateMainMenuBar();
+  void CreateHierarchyWindow();
+  void CreateInspectorWindow();
+  void CreateProjectWindow();
+  void CreateConsoleWindow();
+  void CreateSceneWindow();
+  void CreateGameWindow();
 
 private:
   bool platform_initialized_;

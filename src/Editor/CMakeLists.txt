@@ -56,8 +56,7 @@ FetchContent_MakeAvailable(
 # Editor Executable
 # ======================================================================
 add_subdirectory(${glad_SOURCE_DIR}/cmake ${glad_BINARY_DIR})
-glad_add_library(glad_gl_46 REPRODUCIBLE API gl:core=4.6)
-glad_add_library(glad_vk_14 REPRODUCIBLE API vulkan=1.4)
+glad_add_library(glad REPRODUCIBLE API gl:core=4.6)
 
 add_executable(
     SpaghetEditor
@@ -104,8 +103,7 @@ target_link_libraries(
         SpaghetEngine
 
         EnTT::EnTT
-        glad_gl_46
-        glad_vk_14
+        glad
         glfw
         glm::glm
         OpenGL::GL

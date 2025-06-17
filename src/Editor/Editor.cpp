@@ -54,7 +54,7 @@ bool Editor::Initialize() {
   };
   window_ = std::unique_ptr<SDL_Window,
                             decltype(&SDL_DestroyWindow)>{
-      SDL_CreateWindow("Spaghet", 1280, 720, window_flags),
+      SDL_CreateWindow("Spaghet Editor", 1280, 720, window_flags),
       SDL_DestroyWindow
   };
   if (!window_) {
@@ -148,6 +148,51 @@ void Editor::Run() {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    // Create fullscreen window over viewport
+    if (ImGuiViewport* viewport{ ImGui::GetMainViewport() }) {
+      ImGui::SetNextWindowPos(viewport->Pos);
+      ImGui::SetNextWindowSize(viewport->Size);
+      ImGui::SetNextWindowViewport(viewport->ID);
+    }
+
+    constexpr ImGuiWindowFlags host_window_flags{
+      ImGuiWindowFlags_NoResize
+      | ImGuiWindowFlags_NoMove
+      | ImGuiWindowFlags_NoCollapse
+      | ImGuiWindowFlags_NoBackground
+      | ImGuiWindowFlags_NoBringToFrontOnFocus
+      | ImGuiWindowFlags_NoNavFocus
+      | ImGuiWindowFlags_NoDocking
+    };
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0F, 0.0F });
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0F);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
+
+    if (ImGui::Begin("HostWindow", nullptr, host_window_flags)) {
+      ImGui::PopStyleVar(3);
+
+      // Create main menu bar
+      CreateMainMenuBar();
+
+      // Create dock space
+      const ImGuiID main_dock_space_id{ ImGui::GetID("MainDockSpace") };
+      ImGui::DockSpace(main_dock_space_id,
+                       ImVec2{ 0.0F, 0.0F },
+                       ImGuiDockNodeFlags_PassthruCentralNode);
+    } else {
+      ImGui::PopStyleVar(3);
+    }
+    ImGui::End();
+
+    // Create editor window layout
+    CreateHierarchyWindow();
+    CreateInspectorWindow();
+    CreateProjectWindow();
+    CreateConsoleWindow();
+    CreateSceneWindow();
+    CreateGameWindow();
+
     // Render
     // Clear buffer
     glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
@@ -156,9 +201,15 @@ void Editor::Run() {
     // Render GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    ImGui::UpdatePlatformWindows();
-    ImGui::RenderPlatformWindowsDefault();
-    SDL_GL_MakeCurrent(window_.get(), renderer_context_.get());
+
+    // Update and render platform windows if GUI multi-viewports are enabled
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+      ImGui::UpdatePlatformWindows();
+      ImGui::RenderPlatformWindowsDefault();
+
+      // Make renderer context current again
+      SDL_GL_MakeCurrent(window_.get(), renderer_context_.get());
+    }
 
     // Swap buffers
     SDL_GL_SwapWindow(window_.get());
@@ -210,11 +261,118 @@ void Editor::OnQuit() {
   should_quit_ = true;
 }
 
-void Editor::OnWindowResized() {
+void Editor::OnWindowResized() const {
   int window_width{};
   int window_height{};
   SDL_GetWindowSizeInPixels(window_.get(), &window_width, &window_height);
   glViewport(0, 0, window_width, window_height);
+}
+
+void Editor::CreateMainMenuBar() {
+  // Main menu bar
+  if (ImGui::BeginMainMenuBar()) {
+    // File
+    if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("New Project")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Open Project")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Save Project")) {
+        // ???
+      }
+      ImGui::Separator();
+      if (ImGui::MenuItem("Exit")) {
+        should_quit_ = true;
+      }
+
+      ImGui::EndMenu();
+    }
+
+    // Edit
+    if (ImGui::BeginMenu("Edit")) {
+      if (ImGui::MenuItem("Engine Settings")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Editor Settings")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Project Settings")) {
+        // ???
+      }
+
+      ImGui::EndMenu();
+    }
+
+    // Window
+    if (ImGui::BeginMenu("Window")) {
+      if (ImGui::MenuItem("Hierarchy")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Inspector")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Project")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Console")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Scene")) {
+        // ???
+      }
+      if (ImGui::MenuItem("Game")) {
+        // ???
+      }
+
+      ImGui::EndMenu();
+    }
+
+    ImGui::EndMainMenuBar();
+  }
+}
+
+void Editor::CreateHierarchyWindow() {
+  if (ImGui::Begin("Hierarchy")) {
+    // ???
+  }
+  ImGui::End();
+}
+
+void Editor::CreateInspectorWindow() {
+  if (ImGui::Begin("Inspector")) {
+    // ???
+  }
+  ImGui::End();
+}
+
+void Editor::CreateProjectWindow() {
+  if (ImGui::Begin("Project")) {
+    // ???
+  }
+  ImGui::End();
+}
+
+void Editor::CreateConsoleWindow() {
+  if (ImGui::Begin("Console")) {
+    // ???
+  }
+  ImGui::End();
+}
+
+void Editor::CreateSceneWindow() {
+  if (ImGui::Begin("Scene")) {
+    // ???
+  }
+  ImGui::End();
+}
+
+void Editor::CreateGameWindow() {
+  if (ImGui::Begin("Game")) {
+    // ???
+  }
+  ImGui::End();
 }
 
 } // namespace spaghet
