@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) {
   // Create and initialize editor
-  spaghet::editor::Editor editor{};
+  spaghet::Editor editor{};
   if (!editor.Initialize()) {
     spdlog::error("Editor failed to initialize.");
     return 1;

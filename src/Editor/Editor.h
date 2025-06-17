@@ -11,7 +11,6 @@
 #include "imgui.h"
 
 namespace spaghet {
-namespace editor {
 
 class Editor {
 public:
@@ -39,7 +38,6 @@ private:
   bool should_quit_;
 };
 
-} // namespace editor
 } // namespace spaghet
 
 #endif // EDITOR_H

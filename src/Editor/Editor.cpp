@@ -19,7 +19,6 @@
 #include "imgui_impl_opengl3.h"
 
 namespace spaghet {
-namespace editor {
 
 Editor::Editor()
     : platform_initialized_{ false }
@@ -214,9 +213,8 @@ void Editor::OnQuit() {
 void Editor::OnWindowResized() {
   int window_width{};
   int window_height{};
-  SDL_GetWindowSize(window_.get(), &window_width, &window_height);
+  SDL_GetWindowSizeInPixels(window_.get(), &window_width, &window_height);
   glViewport(0, 0, window_width, window_height);
 }
 
-} // namespace editor
 } // namespace spaghet

@@ -2,6 +2,7 @@
 # Editor Dependencies
 # ======================================================================
 find_package(OpenGL REQUIRED)
+find_package(Vulkan REQUIRED)
 
 include(FetchContent)
 
@@ -15,6 +16,12 @@ FetchContent_Declare(
     glad            # v2.0.8
     GIT_REPOSITORY  https://github.com/Dav1dde/glad.git
     GIT_TAG         73db193f853e2ee079bf3ca8a64aa2eaf6459043
+)
+
+FetchContent_Declare(
+    glfw            # 3.4
+    GIT_REPOSITORY  https://github.com/glfw/glfw.git
+    GIT_TAG         7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 )
 
 FetchContent_Declare(
@@ -42,14 +49,15 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(
-    EnTT glad glm imgui SDL3 spdlog
+    EnTT glad glfw glm imgui SDL3 spdlog
 )
 
 # ======================================================================
 # Editor Executable
 # ======================================================================
 add_subdirectory(${glad_SOURCE_DIR}/cmake ${glad_BINARY_DIR})
-glad_add_library(glad REPRODUCIBLE API gl:core=4.6)
+glad_add_library(glad_gl_46 REPRODUCIBLE API gl:core=4.6)
+glad_add_library(glad_vk_14 REPRODUCIBLE API vulkan=1.4)
 
 add_executable(
     SpaghetEditor
@@ -87,6 +95,8 @@ target_include_directories(
     SpaghetEditor PRIVATE
         ${imgui_SOURCE_DIR}
         ${imgui_SOURCE_DIR}/backends
+
+        ${Vulkan_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -94,11 +104,14 @@ target_link_libraries(
         SpaghetEngine
 
         EnTT::EnTT
-        glad
+        glad_gl_46
+        glad_vk_14
+        glfw
         glm::glm
         OpenGL::GL
         SDL3::SDL3
         spdlog::spdlog
+        Vulkan::Vulkan
 )
 
 # ======================================================================
