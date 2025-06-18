@@ -1,8 +1,6 @@
 #include "Editor.h"
 
 // STL
-#include <filesystem>
-#include <fstream>
 #include <memory>
 
 // glad
@@ -57,32 +55,18 @@ bool Editor::Initialize() {
   }
 
   // Configure platform
-  bool platform_configured{ true };
-  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4)) {
-    spdlog::error(SDL_GetError());
-    platform_configured = false;
-  }
-  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6)) {
-    spdlog::error(SDL_GetError());
-    platform_configured = false;
-  }
-  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                          SDL_GL_CONTEXT_PROFILE_CORE)) {
-    spdlog::error(SDL_GetError());
-    platform_configured = false;
-  }
-  if (!platform_configured) {
-    spdlog::error("Editor platform failed to configure for OpenGL 4.6 core.");
-    return false;
-  }
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   // Create window
   constexpr SDL_WindowFlags window_flags{
-    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
+    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+    | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_HIGH_PIXEL_DENSITY
   };
   window_ = std::unique_ptr<SDL_Window,
                             decltype(&SDL_DestroyWindow)>{
-      SDL_CreateWindow("Spaghet Editor", 1280, 720, window_flags),
+      SDL_CreateWindow("Spaghet Editor", 640, 480, window_flags),
       SDL_DestroyWindow
   };
   if (!window_) {
@@ -144,7 +128,7 @@ bool Editor::Initialize() {
   }
 
   // Initialize GUI for renderer
-  gui_renderer_initialized_ = ImGui_ImplOpenGL3_Init();
+  gui_renderer_initialized_ = ImGui_ImplOpenGL3_Init("#version 460 core");
   if (!gui_renderer_initialized_) {
     spdlog::error("Editor GUI failed to initialize for renderer.");
     return false;
