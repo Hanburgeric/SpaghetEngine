@@ -26,6 +26,9 @@ private:
   void OnWindowResized() const;
 
   void CreateMainMenuBar();
+
+  void SetupDefaultEditorDockSpaceLayout(ImGuiID dock_space_id);
+
   void CreateHierarchyWindow();
   void CreateInspectorWindow();
   void CreateProjectWindow();
@@ -44,6 +47,15 @@ private:
   bool gui_platform_initialized_;
   bool gui_renderer_initialized_;
   bool should_quit_;
+
+  bool first_run_;
+
+  bool show_hierarchy_window_;
+  bool show_inspector_window_;
+  bool show_project_window_;
+  bool show_console_window_;
+  bool show_scene_window_;
+  bool show_game_window_;
 };
 
 } // namespace spaghet

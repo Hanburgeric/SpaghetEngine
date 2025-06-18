@@ -1,6 +1,8 @@
 #include "Editor.h"
 
 // STL
+#include <filesystem>
+#include <fstream>
 #include <memory>
 
 // glad
@@ -27,7 +29,13 @@ Editor::Editor()
     , gui_context_{ nullptr, nullptr }
     , gui_platform_initialized_{ false }
     , gui_renderer_initialized_{ false }
-    , should_quit_{ false } {}
+    , should_quit_{ false }
+    , first_run_{ true }
+    , show_hierarchy_window_{ true }
+    , show_inspector_window_{ true }
+    , show_project_window_{ true }
+    , show_console_window_{ true }
+    , show_scene_window_{ true } {}
 
 Editor::~Editor() {
   // Shutdown automatically just in case
@@ -46,6 +54,26 @@ bool Editor::Initialize() {
     return false;
   } else {
     spdlog::info("Editor platform initialized.");
+  }
+
+  // Configure platform
+  bool platform_configured{ true };
+  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4)) {
+    spdlog::error(SDL_GetError());
+    platform_configured = false;
+  }
+  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6)) {
+    spdlog::error(SDL_GetError());
+    platform_configured = false;
+  }
+  if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                          SDL_GL_CONTEXT_PROFILE_CORE)) {
+    spdlog::error(SDL_GetError());
+    platform_configured = false;
+  }
+  if (!platform_configured) {
+    spdlog::error("Editor platform failed to configure for OpenGL 4.6 core.");
+    return false;
   }
 
   // Create window
@@ -148,11 +176,11 @@ void Editor::Run() {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    // Create fullscreen window over viewport
-    if (ImGuiViewport* viewport{ ImGui::GetMainViewport() }) {
-      ImGui::SetNextWindowPos(viewport->Pos);
-      ImGui::SetNextWindowSize(viewport->Size);
-      ImGui::SetNextWindowViewport(viewport->ID);
+    // Create fullscreen window over main viewport
+    if (const ImGuiViewport* main_viewport{ ImGui::GetMainViewport() }) {
+      ImGui::SetNextWindowPos(main_viewport->Pos);
+      ImGui::SetNextWindowSize(main_viewport->Size);
+      ImGui::SetNextWindowViewport(main_viewport->ID);
     }
 
     constexpr ImGuiWindowFlags host_window_flags{
@@ -170,8 +198,6 @@ void Editor::Run() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0F);
 
     if (ImGui::Begin("HostWindow", nullptr, host_window_flags)) {
-      ImGui::PopStyleVar(3);
-
       // Create main menu bar
       CreateMainMenuBar();
 
@@ -180,18 +206,24 @@ void Editor::Run() {
       ImGui::DockSpace(main_dock_space_id,
                        ImVec2{ 0.0F, 0.0F },
                        ImGuiDockNodeFlags_PassthruCentralNode);
-    } else {
-      ImGui::PopStyleVar(3);
+
+      // Set up default editor dock space layout
+      // if this is the first iteration of the main application loop
+      if (first_run_) {
+        SetupDefaultEditorDockSpaceLayout(main_dock_space_id);
+        first_run_ = false;
+      }
     }
+    ImGui::PopStyleVar(3);
     ImGui::End();
 
     // Create editor window layout
-    CreateHierarchyWindow();
-    CreateInspectorWindow();
-    CreateProjectWindow();
-    CreateConsoleWindow();
-    CreateSceneWindow();
-    CreateGameWindow();
+    if (show_hierarchy_window_) { CreateHierarchyWindow(); }
+    if (show_inspector_window_) { CreateInspectorWindow(); }
+    if (show_project_window_) { CreateProjectWindow(); }
+    if (show_console_window_) { CreateConsoleWindow(); }
+    if (show_scene_window_) { CreateSceneWindow(); }
+    if (show_game_window_) { CreateGameWindow(); }
 
     // Render
     // Clear buffer
@@ -307,22 +339,22 @@ void Editor::CreateMainMenuBar() {
 
     // Window
     if (ImGui::BeginMenu("Window")) {
-      if (ImGui::MenuItem("Hierarchy")) {
+      if (ImGui::MenuItem("Hierarchy", nullptr, &show_hierarchy_window_)) {
         // ???
       }
-      if (ImGui::MenuItem("Inspector")) {
+      if (ImGui::MenuItem("Inspector", nullptr, &show_inspector_window_)) {
         // ???
       }
-      if (ImGui::MenuItem("Project")) {
+      if (ImGui::MenuItem("Project", nullptr, &show_project_window_)) {
         // ???
       }
-      if (ImGui::MenuItem("Console")) {
+      if (ImGui::MenuItem("Console", nullptr, &show_console_window_)) {
         // ???
       }
-      if (ImGui::MenuItem("Scene")) {
+      if (ImGui::MenuItem("Scene", nullptr, &show_scene_window_)) {
         // ???
       }
-      if (ImGui::MenuItem("Game")) {
+      if (ImGui::MenuItem("Game", nullptr, &show_game_window_)) {
         // ???
       }
 
@@ -333,43 +365,80 @@ void Editor::CreateMainMenuBar() {
   }
 }
 
+void Editor::SetupDefaultEditorDockSpaceLayout(ImGuiID dock_space_id) {
+  // Remove existing layout
+  ImGui::DockBuilderRemoveNode(dock_space_id);
+  ImGui::DockBuilderAddNode(dock_space_id, ImGuiDockNodeFlags_DockSpace);
+  if (const ImGuiViewport* main_viewport{ ImGui::GetMainViewport() }) {
+    ImGui::DockBuilderSetNodeSize(dock_space_id, main_viewport->Size);
+  }
+
+  // Split main dock space into left and right sides
+  ImGuiID dock_left;
+  ImGuiID dock_right;
+  ImGui::DockBuilderSplitNode(dock_space_id,
+                              ImGuiDir_Left, 0.75F,
+                              &dock_left, &dock_right);
+
+  // Split left side vertically; top for hierarchy, bottom for project/console
+  ImGuiID dock_hierarchy;
+  ImGuiID dock_project_console;
+  ImGui::DockBuilderSplitNode(dock_left,
+                              ImGuiDir_Up, 0.7F,
+                              &dock_hierarchy, &dock_project_console);
+
+  // Split remaining center area horizontally for scene/game
+  ImGuiID dock_scene_game;
+  ImGui::DockBuilderSplitNode(dock_hierarchy,
+                              ImGuiDir_Right, 0.75F,
+                              &dock_scene_game, &dock_hierarchy);
+
+  // Dock windows to respective nodes
+  ImGui::DockBuilderDockWindow("Hierarchy", dock_hierarchy);
+  ImGui::DockBuilderDockWindow("Inspector", dock_right);
+  ImGui::DockBuilderDockWindow("Project", dock_project_console);
+  ImGui::DockBuilderDockWindow("Console", dock_project_console);
+  ImGui::DockBuilderDockWindow("Scene", dock_scene_game);
+  ImGui::DockBuilderDockWindow("Game", dock_scene_game);
+}
+
 void Editor::CreateHierarchyWindow() {
-  if (ImGui::Begin("Hierarchy")) {
+  if (ImGui::Begin("Hierarchy", &show_hierarchy_window_)) {
     // ???
   }
   ImGui::End();
 }
 
 void Editor::CreateInspectorWindow() {
-  if (ImGui::Begin("Inspector")) {
+  if (ImGui::Begin("Inspector", &show_inspector_window_)) {
     // ???
   }
   ImGui::End();
 }
 
 void Editor::CreateProjectWindow() {
-  if (ImGui::Begin("Project")) {
+  if (ImGui::Begin("Project", &show_project_window_)) {
     // ???
   }
   ImGui::End();
 }
 
 void Editor::CreateConsoleWindow() {
-  if (ImGui::Begin("Console")) {
+  if (ImGui::Begin("Console", &show_console_window_)) {
     // ???
   }
   ImGui::End();
 }
 
 void Editor::CreateSceneWindow() {
-  if (ImGui::Begin("Scene")) {
+  if (ImGui::Begin("Scene", &show_scene_window_)) {
     // ???
   }
   ImGui::End();
 }
 
 void Editor::CreateGameWindow() {
-  if (ImGui::Begin("Game")) {
+  if (ImGui::Begin("Game", &show_game_window_)) {
     // ???
   }
   ImGui::End();
